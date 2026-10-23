@@ -1,0 +1,30 @@
+[Unit]
+Description=document-ai worker documentale singolo
+After=network.target document-ai-model.service
+Wants=document-ai-model.service
+
+[Service]
+Type=simple
+User=documentai
+Group=documentai
+WorkingDirectory=/opt/document-ai
+EnvironmentFile=/etc/document-ai.env
+Environment=OMP_THREAD_LIMIT=1
+Environment=OMP_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=2
+Environment=PYTHONDONTWRITEBYTECODE=1
+Slice=document-ai.slice
+UMask=0077
+ExecStart=/opt/document-ai/.venv/bin/python manage.py runworker
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/document-ai
+
+[Install]
+WantedBy=multi-user.target

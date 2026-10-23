@@ -1,0 +1,14 @@
+.venv/
+.env
+.data/
+.static/
+__pycache__/
+*.py[cod]
+.DS_Store
+*.sqlite3*
+*.gguf
+models/
+coverage.xml
+.coverage
+.pytest_cache/
+*.egg-info/

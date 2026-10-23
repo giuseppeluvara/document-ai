@@ -1,0 +1,10 @@
+[project]
+name = "document-ai"
+version = "0.1.0"
+description = "Estrazione documentale locale con template configurabili e fonti verificabili"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

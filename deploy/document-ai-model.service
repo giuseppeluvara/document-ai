@@ -1,0 +1,25 @@
+[Unit]
+Description=document-ai modello locale CPU (llama.cpp)
+After=network.target
+
+[Service]
+Type=simple
+User=documentai
+Group=documentai
+WorkingDirectory=/opt/document-ai
+Environment=OMP_NUM_THREADS=2
+Environment=OPENBLAS_NUM_THREADS=2
+Slice=document-ai.slice
+UMask=0077
+ExecStart=/opt/llama.cpp/build-avx/bin/llama-server --model /opt/document-ai/models/qwen2.5-1.5b-instruct-q4_k_m.gguf --alias local --host 127.0.0.1 --port 8081 --threads 2 --threads-batch 2 --ctx-size 8192 --parallel 1 --n-gpu-layers 0
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

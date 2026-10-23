@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Documenti · Document AI{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow"><span class="tiny-line"></span>IL TUO SPAZIO DOCUMENTALE</p>
+    <h1>Dai documenti<br>ai dati che ti servono<span class="accent">.</span></h1>
+    <p class="hero-copy">Scegli cosa cercare. Carica un documento. Ritrova ogni informazione insieme al passaggio da cui proviene.</p>
+  </div>
+  <div class="hero-note">
+    <div class="note-icon" aria-hidden="true">↗</div>
+    <strong>Un template, molti documenti.</strong>
+    <p>Definisci una volta i campi da estrarre e riutilizzali per contratti, verbali o altri documenti.</p>
+    <a class="text-link" href="{% url 'documents:template_list' %}">Gestisci i template <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<section class="workspace-grid" aria-label="Caricamento e panoramica">
+  <div class="card upload-card">
+    <div class="section-heading"><div><p class="eyebrow">01 / ACQUISISCI</p><h2>Nuovo documento</h2></div><span class="tag">PDF · DOCX</span></div>
+    {% if template_count %}
+    <form method="post" enctype="multipart/form-data" class="upload-form" data-busy-form>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-field">
+        <label for="{{ form.template.id_for_label }}">Template di estrazione</label>
+        {{ form.template }}
+        <p class="help-text">Il template stabilisce quali informazioni cercare.</p>
+        {% for error in form.template.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="file-picker">
+        <div class="file-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M10 4h9l6 6v18H9a3 3 0 0 1-3-3V8a4 4 0 0 1 4-4Z" stroke="currentColor" stroke-width="1.5"/><path d="M19 4v7h6M11 18h9M11 22h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <label for="{{ form.file.id_for_label }}">Scegli un documento</label>
+        <p>PDF testuali, scansioni stampate o file Word .docx</p>
+        {{ form.file }}
+        <p class="file-selection" data-file-info aria-live="polite">Nessun file selezionato</p>
+      </div>
+      {% for error in form.file.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      <div class="upload-bottom"><p class="help-text">L’originale rimane disponibile fino alla sua eliminazione.</p><button class="button button-primary" type="submit" data-busy-label="Caricamento…">Avvia estrazione <span aria-hidden="true">→</span></button></div>
+    </form>
+    {% else %}
+    <div class="empty-inline"><h3>Inizia da un template</h3><p>Indica quali campi vuoi estrarre, poi carica il tuo primo documento.</p><a class="button button-primary" href="{% url 'documents:template_create' %}">Crea un template <span aria-hidden="true">+</span></a></div>
+    {% endif %}
+  </div>
+  <aside class="card workflow-card">
+    <p class="eyebrow">COME FUNZIONA</p>
+    <h2>Ogni dato ha<br>una fonte.</h2>
+    <ol class="workflow-list">
+      <li><span>1</span><div><strong>Definisci i campi</strong><p>Usa un template con nomi, descrizioni e tipi di dato.</p></div></li>
+      <li><span>2</span><div><strong>Lascia leggere il documento</strong><p>Il testo viene acquisito e, se necessario, riconosciuto con OCR.</p></div></li>
+      <li><span>3</span><div><strong>Verifica ed esporta</strong><p>Controlla i passaggi di origine, correggi i valori e scarica JSON o Excel.</p></div></li>
+    </ol>
+    <div class="workflow-foot"><span class="status-dot" aria-hidden="true"></span>Una lavorazione alla volta</div>
+  </aside>
+</section>
+
+<section class="documents-section">
+  <div class="section-heading"><div><p class="eyebrow">02 / CONSULTA</p><h2>I tuoi documenti</h2></div><span class="count-label">{{ documents|length }} document{{ documents|length|pluralize:'o,i' }}</span></div>
+  {% if documents %}
+  <div class="table-wrap card"><table class="document-table"><thead><tr><th scope="col">Documento</th><th scope="col">Template</th><th scope="col">Stato</th><th scope="col">Caricato</th><th scope="col"><span class="sr-only">Azioni</span></th></tr></thead><tbody>
+    {% for document in documents %}
+    <tr><td><a class="document-name" href="{% url 'documents:detail' document.id %}"><span class="mini-doc" aria-hidden="true">↗</span>{{ document.original_name }}</a></td><td class="muted">{{ document.template_snapshot.name|default:'Template' }}</td><td><span class="badge status-{{ document.status }}">{% if document.status == 'queued' %}In coda{% elif document.status == 'processing' %}In elaborazione{% elif document.status == 'succeeded' %}Da verificare{% else %}Non completato{% endif %}</span></td><td class="date-cell">{{ document.created_at|date:'d M Y · H:i' }}</td><td><a class="table-action" href="{% url 'documents:detail' document.id %}">Apri <span aria-hidden="true">→</span></a></td></tr>
+    {% endfor %}
+  </tbody></table></div>
+  {% else %}
+  <div class="card empty-state"><span class="empty-glyph" aria-hidden="true">▤</span><h3>Il prossimo documento parte da qui.</h3><p>Gli originali caricati, lo stato delle elaborazioni e i risultati saranno raccolti in questo spazio.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

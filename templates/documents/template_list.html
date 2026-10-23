@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Template · Document AI{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow"><span class="tiny-line"></span>CONFIGURA L’ESTRAZIONE</p><h1>I tuoi template<span class="accent">.</span></h1><p>Definisci le informazioni da cercare e riutilizza lo stesso schema su documenti diversi.</p></div><a class="button button-primary" href="{% url 'documents:template_create' %}">Nuovo template <span aria-hidden="true">+</span></a></div>
+{% if extraction_templates %}
+<div class="template-grid">
+  {% for template in extraction_templates %}
+  <article class="card template-card"><div class="template-card-top"><span class="template-symbol" aria-hidden="true">⌘</span><span class="tag">{{ template.fields|length }} camp{{ template.fields|length|pluralize:'o,i' }}</span></div><h2>{{ template.name }}</h2><p class="template-description">{{ template.description|default:'Uno schema personalizzato per estrarre informazioni dai tuoi documenti.' }}</p><div class="field-chips">{% for field in template.fields %}<span>{{ field.label }}</span>{% endfor %}</div><div class="template-card-bottom"><span>Aggiornato {{ template.updated_at|date:'d M Y' }}</span><a class="text-link" href="{% url 'documents:template_edit' template.pk %}">Modifica <span aria-hidden="true">→</span></a></div></article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state"><span class="empty-glyph" aria-hidden="true">⌘</span><h2>Di quali informazioni hai bisogno?</h2><p>Crea un template indicando, per esempio, parti, oggetto, importo e scadenze di un contratto.</p><a class="button button-primary" href="{% url 'documents:template_create' %}">Crea il primo template</a></div>
+{% endif %}
+<div class="bottom-note"><span aria-hidden="true">↳</span><p>Le modifiche ai template si applicano alle nuove elaborazioni. Ogni documento mantiene lo schema usato al momento del caricamento.</p></div>
+{% endblock %}

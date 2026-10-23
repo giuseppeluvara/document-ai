@@ -1,0 +1,26 @@
+[Unit]
+Description=document-ai web locale (Gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=documentai
+Group=documentai
+WorkingDirectory=/opt/document-ai
+EnvironmentFile=/etc/document-ai.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+Slice=document-ai.slice
+UMask=0077
+ExecStart=/opt/document-ai/.venv/bin/gunicorn document_ai.wsgi:application --bind 127.0.0.1:8000 --workers 1 --threads 2 --timeout 60
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=35
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/document-ai
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ document.original_name }} · Document AI{% endblock %}
+{% block content %}
+<div data-document-status="{{ document.status }}" data-poll-status-url="{% url 'documents:status' document.id %}">
+  <a class="back-link" href="{% url 'documents:index' %}"><span aria-hidden="true">←</span> Tutti i documenti</a>
+  <div class="page-heading document-heading"><div><p class="eyebrow">{{ document.template_snapshot.name|default:'ESTRAZIONE DOCUMENTALE' }}</p><h1 class="filename-heading">{{ document.original_name }}</h1><div class="document-meta"><span>{{ document.created_at|date:'d M Y · H:i' }}</span><span>{{ document.file_size|filesizeformat }}</span><span class="badge status-{{ document.status }}">{% if document.status == 'queued' %}In coda{% elif document.status == 'processing' %}In elaborazione{% elif document.status == 'succeeded' %}{% if reviewed %}Revisionato{% else %}Da verificare{% endif %}{% else %}Non completato{% endif %}</span></div></div><div class="heading-actions">{% if original_exists %}<a class="button button-secondary" href="{% url 'documents:original' document.id %}">Scarica originale <span aria-hidden="true">↓</span></a>{% endif %}</div></div>
+
+  {% if document.status == 'queued' or document.status == 'processing' %}
+  <section class="card processing-state" aria-live="polite"><span class="processing-spinner" aria-hidden="true"></span><p class="eyebrow">{% if document.status == 'queued' %}IN ATTESA DEL WORKER{% else %}LETTURA IN CORSO{% endif %}</p><h2>{% if document.status == 'queued' %}Il documento è in coda.{% else %}Stiamo cercando le informazioni.{% endif %}</h2><p>{% if document.status == 'queued' %}L’elaborazione parte quando il worker locale è disponibile. Se la coda rimane ferma, verifica che sia avviato.{% else %}Il documento viene letto per sezioni. La pagina si aggiornerà quando il risultato sarà pronto.{% endif %}</p><span class="subtle-label" data-poll-message>Aggiornamento automatico attivo</span></section>
+  {% elif document.status == 'failed' %}
+  <section class="card failure-state" role="alert"><span class="failure-symbol" aria-hidden="true">!</span><p class="eyebrow">ELABORAZIONE NON COMPLETATA</p><h2>Il documento richiede attenzione.</h2><p>{{ document.error|default:'Non è stato possibile completare l’estrazione. Controlla il file e il servizio AI locale.' }}</p><form method="post" action="{% url 'documents:retry' document.id %}" data-busy-form>{% csrf_token %}<button type="submit" class="button button-primary" data-busy-label="Invio in coda…">Riprova estrazione <span aria-hidden="true">↻</span></button></form></section>
+  {% endif %}
+
+  {% if warnings %}<div class="notice notice-warning"><strong>Da tenere presente</strong><ul>{% for warning in warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>{% endif %}
+
+  {% if document.status == 'succeeded' %}
+  <div class="result-layout">
+    <section class="results-main"><div class="section-heading"><div><p class="eyebrow">01 / VERIFICA</p><h2>Informazioni estratte</h2></div><span class="count-label">{{ fields|length }} campi</span></div><p class="section-description">Controlla i valori insieme ai passaggi di origine. Le correzioni manuali rimangono distinte dal risultato iniziale.</p>
+      <form method="post" action="{% url 'documents:review' document.id %}" data-busy-form>
+        {% csrf_token %}
+        <div class="result-fields">
+        {% for field in fields %}
+          <article class="card result-field"><div class="result-field-heading"><label for="field-{{ field.key }}">{{ field.label }}</label><span class="field-state {% if field.status == 'not_found' and not field.manually_reviewed %}field-missing{% endif %}">{% if field.manually_reviewed %}Revisionato{% elif field.status == 'not_found' %}Non trovato{% else %}Da verificare{% endif %}</span></div><textarea id="field-{{ field.key }}" name="field_{{ field.key }}" rows="{% if field.type == 'list' %}4{% else %}2{% endif %}" placeholder="Non trovato nel documento">{{ field.review_value|default_if_none:'' }}</textarea>{% if field.type == 'list' %}<p class="help-text">Un elemento per riga.</p>{% elif field.type == 'date' %}<p class="help-text">Formato data: AAAA-MM-GG, per esempio 2026-10-23.</p>{% elif field.type == 'number' %}<p class="help-text">Usa il punto per i decimali, senza separatori delle migliaia o simboli di valuta.</p>{% endif %}
+          {% if field.evidence %}<div class="evidence-list"><span class="evidence-label">{% if field.manually_reviewed %}FONTI DEL RISULTATO AUTOMATICO{% else %}PASSAGGI DI ORIGINE{% endif %}</span>{% for evidence in field.evidence %}<blockquote><p>«{{ evidence.quote }}»</p><a href="#src-{{ evidence.segment_id }}" data-source-target="src-{{ evidence.segment_id }}">Apri nel testo <span aria-hidden="true">↗</span></a></blockquote>{% endfor %}</div>{% else %}<p class="no-evidence">Nessun passaggio verificabile individuato per questo campo.</p>{% endif %}
+          {% if field.warnings %}<ul class="field-warnings">{% for warning in field.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}</article>
+        {% empty %}<div class="card empty-inline"><p>Non sono disponibili campi estratti.</p></div>{% endfor %}
+        </div>
+        {% if fields %}<div class="review-actions"><p>Salva dopo aver verificato i valori. L’originale e i passaggi di origine rimangono disponibili.</p><button class="button button-primary" type="submit" data-busy-label="Salvataggio…">Salva revisione <span aria-hidden="true">✓</span></button></div>{% endif %}
+      </form>
+    </section>
+    <aside class="result-sidebar"><div class="card export-card"><p class="eyebrow">02 / PORTA CON TE</p><h2>Esporta i dati</h2><p>Scarica i valori correnti insieme ai riferimenti al documento.</p>{% if can_export %}<a class="button button-primary button-full" href="{% url 'documents:export_json' document.id %}"><span>JSON <small>Dati strutturati</small></span><span aria-hidden="true">↓</span></a><a class="button button-secondary button-full" href="{% url 'documents:export_xlsx' document.id %}"><span>Excel <small>File .xlsx</small></span><span aria-hidden="true">↓</span></a>{% endif %}<div class="export-note">{% if reviewed %}<span class="status-dot" aria-hidden="true"></span>Revisione salvata{% else %}Verifica i risultati prima di utilizzarli.{% endif %}</div></div><div class="sidebar-note"><strong>La fonte resta il documento.</strong><p>L’estrazione automatica può omettere o interpretare male alcune informazioni. La presenza di una citazione aiuta la verifica e non sostituisce il controllo.</p></div></aside>
+  </div>
+  {% endif %}
+
+  {% if segments %}
+  <section class="sources-section"><div class="section-heading"><div><p class="eyebrow">TESTO DI RIFERIMENTO</p><h2>Dentro il documento</h2></div><span class="count-label">{{ segments|length }} sezion{{ segments|length|pluralize:'e,i' }}</span></div><p class="section-description">Testo acquisito dal file originale. Nelle scansioni, eventuali errori OCR possono influire sull’estrazione.</p><div class="source-list">{% for segment in segments %}<details class="card source-section" id="src-{{ segment.id }}"><summary><span>{{ segment.label }}</span><span class="source-method">{% if segment.method == 'ocr' %}OCR{% elif segment.method == 'docx' %}Word{% else %}Testo PDF{% endif %}<span class="details-chevron" aria-hidden="true">+</span></span></summary><pre>{{ segment.text }}</pre></details>{% endfor %}</div></section>
+  {% endif %}
+
+  {% if document.status != 'processing' %}<div class="document-danger"><p>Eliminando il documento rimuovi l’originale e i risultati conservati nell’app.</p><form method="post" action="{% url 'documents:delete' document.id %}" data-confirm="Eliminare definitivamente il documento originale e i risultati?">{% csrf_token %}<button class="button button-danger" type="submit">Elimina documento</button></form></div>{% endif %}
+</div>
+{% endblock %}

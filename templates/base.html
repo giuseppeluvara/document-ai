@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}Document AI{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'document_ai/app.css' %}">
+  <script src="{% static 'document_ai/app.js' %}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Vai al contenuto</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="{% url 'documents:index' %}" aria-label="Document AI, pagina iniziale">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3.5h7l4 4V20H7a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6"/><path d="M14 3.5V8h4M9 12h5M9 15.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+        <span>Document <strong>AI</strong><small>DOCUMENT INTELLIGENCE</small></span>
+      </a>
+      <nav class="main-nav" aria-label="Navigazione principale">
+        <a href="{% url 'documents:index' %}"{% if request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'detail' %} aria-current="page"{% endif %}>Documenti</a>
+        <a href="{% url 'documents:template_list' %}"{% if request.resolver_match.url_name == 'template_list' or request.resolver_match.url_name == 'template_create' or request.resolver_match.url_name == 'template_edit' %} aria-current="page"{% endif %}>Template</a>
+      </nav>
+      <span class="local-indicator"><span aria-hidden="true"></span>Elaborazione locale</span>
+    </div>
+  </header>
+  <main id="main" class="page-shell">
+    {% if messages %}
+    <div class="messages" aria-live="polite">
+      {% for message in messages %}<div class="notice notice-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer"><span>Document AI</span><span>Estrai. Verifica. Esporta.</span><span>I risultati richiedono verifica.</span></footer>
+</body>
+</html>
